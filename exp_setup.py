@@ -1,65 +1,143 @@
 import numpy as np
 import numpy.random as rnd
+import scipy
+import pandas as pd
+import math
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from scipy.optimize import minimize
+from numpy import linalg as LA
+import cvxpy as cp
+import matplotlib.pyplot as plt
 
-def get_random_q(num_species=4):
-    agent_size = int(num_species/4)
-    rng = rnd.default_rng()
-    q_1 = np.concatenate([rng.normal(10,1, size=agent_size),rng.normal(5, 1, size=agent_size),rng.normal(7, 1, size=agent_size),rng.normal(15, 2, size=agent_size)])#speed
-    q_2 = np.concatenate([rng.normal(90,5, size=agent_size),rng.normal(150, 9, size=agent_size),rng.normal(120, 10, size=agent_size),rng.normal(75, 12, size=agent_size)]) #footprint
-    q_3 = np.concatenate([rng.normal(8,2, size=agent_size),rng.normal(5, 1, size=agent_size),rng.normal(16, 1, size=agent_size),rng.normal(7, 2, size=agent_size)]) #payload
-    q_4 = np.concatenate([rng.normal(2,1, size=agent_size),rng.normal(3, 1, size=agent_size),rng.normal(2, 1, size=agent_size),rng.normal(3, 2, size=agent_size)]) #reach
-    q_5 = rng.normal(np.random.randint(25,30), 1, size=num_species) #weight
-    q_6 = rng.normal(np.random.randint(210,230), 15.4, size=num_species) #sensing frequency
-    q_7 = rng.normal(np.random.randint(58,60), 0.8, size=num_species) #sensing range
-    q_8 = rnd.choice([0,1,2,3,4], num_species) #color
-    q_9 = rnd.choice(range(10,20), num_species) #battery
-    Q = np.array([q_1, q_2, q_3, q_4, q_5, q_6, q_7, q_8, q_9]).T
-    return Q
+import os
+import sys
+module_path = os.path.abspath(os.path.join('..'))
+if module_path not in sys.path:
+    sys.path.append(module_path)
 
-# def get_deterministic_q():
-#     Q_master = np.array([   [  9.23918352,  11.90620543,  10.53292464,   9.59601526, 8.09180044,   5.3907205 ,   4.36013104,   6.26982438, 5.62048407,   4.33589295,   6.83473728,   6.93909328, 5.466237  ,   4.89535722,   7.37487731,  13.91198224, 14.8902714 ,  20.1714527 ,  13.42318422,  15.25451451],   
-#                             [ 83.49960611,  91.42168321,  87.46871472,  86.05393088,85.46500857, 152.72279577, 142.04504698, 157.27231004,142.53179087, 145.87187006, 134.45525572, 125.61530258,116.89311174, 125.06972235, 120.37085389,  74.56449124,58.97478981,  91.61323028,  80.57563977,  68.30003836],
-#                             [ 10.89758117,   5.93457914,   6.70158357,   9.96495997,11.35077763,   5.91330245,   4.12606487,   4.61532922,4.57792751,   4.03014111,  17.25782298,  14.81293339,15.01662868,  14.88700865,  16.3928066 ,   6.71303366, 7.02389812,   6.27550929,   2.09331897,   8.93246973],
-#                             [  3.35040671,   1.14991181,   2.03221372,   0.57500585,2.01644894,   3.41145602,   2.65880892,   2.49255253,4.52075551,   1.96576587,   2.3917984 ,   1.78786766,2.27236423,   2.60576371,   3.37611105,   3.60091245,2.29526818,   3.26773863,   3.66587264,   4.04958294],
-#                             [ 27.35963654,  28.70833559,  28.17720895,  28.35548257,28.52188259,  25.92882973,  26.39641364,  28.84505038,    28.0369515 ,  26.23950531,  26.4445487 ,  28.43585418,    27.06816073,  26.35838129,  28.74999209,  27.91573835,27.29551519,  27.39695175,  27.43213408,  27.90922054],
-#                             [217.37665023, 254.46721127, 214.58548929, 212.30796155,207.6643806 , 232.82418229, 219.35875565, 225.80245733,192.92778782, 211.88948643, 222.73195506, 224.40770549,193.56940232, 209.5525548 , 214.41225727, 207.96557007,196.76240068, 215.34573519, 246.79628606, 232.69723099],
-#                             [ 58.77190383,  60.3231273 ,  60.67383826,  58.73472194,    57.12200567,  58.5370682 ,  59.53347581,  59.50739216,    58.68445876,  58.97691257,  59.13420197,  58.46502442,    59.27933208,  59.01305319,  58.68714375,  59.54004468,  58.97430914,  57.47285604,  59.31326026,  57.56596041],
-#                             [  1.  ,   1.  ,   0.  ,   2.  ,4.  ,   3.  ,   4.  ,   0.  ,1.  ,   1.  ,   0.  ,   0.  ,0.  ,   4.  ,   1.  ,   0.  ,2.  ,   1.  ,   3.  ,   4.  ],
-#                             [ 12.  ,  17.  ,  12.  ,  14.  ,13.  ,  13.  ,  15.  ,  11. , 18.  ,  17.  ,  16.  ,  11.  ,  17.  ,  16.  ,  15.  ,  10.  , 15.  ,  17.  ,  15.  ,  10.  ]
-#                         ])
-#     a = rnd.randint(0,5)
-#     b = rnd.randint(5,10)
-#     c = rnd.randint(10,15)
-#     d = rnd.randint(15,20)
-#     indx = np.array([a,b,c,d])
-#     Q = Q_master[:, indx].T
-#     return Q
+class Experiment:
+    traits = ["speed","footprint","payload","reach","weight","sensing frequency","sensing range","color","battery"]
 
-# def get_random_choosen_q(total_num_species=20, num_species = 4):
-#     rng = rnd.default_rng()
-#     q_1 = np.concatenate([rng.normal(10,1, size=5),rng.normal(5, 1, size=5),rng.normal(7, 1, size=5),rng.normal(15, 2, size=5)])#speed
-#     q_2 = np.concatenate([rng.normal(90,5, size=5),rng.normal(150, 9, size=5),rng.normal(120, 10, size=5),rng.normal(75, 12, size=5)]) #footprint
-#     q_3 = np.concatenate([rng.normal(8,2, size=5),rng.normal(5, 1, size=5),rng.normal(16, 1, size=5),rng.normal(7, 2, size=5)]) #payload
-#     q_4 = np.concatenate([rng.normal(2,1, size=5),rng.normal(3, 1, size=5),rng.normal(2, 1, size=5),rng.normal(3, 2, size=5)]) #reach
-#     q_5 = rng.normal(np.random.randint(25,30), 1, size=total_num_species) #weight
-#     q_6 = rng.normal(np.random.randint(210,230), 15.4, size=total_num_species) #sensing frequency
-#     q_7 = rng.normal(np.random.randint(58,60), 0.8, size=total_num_species) #sensing range
-#     q_8 = rnd.choice([0,1,2,3,4], total_num_species) #color
-#     q_9 = rnd.choice(range(10,20), total_num_species) #battery
-#     Q_master = np.array([q_1, q_2, q_3, q_4, q_5, q_6, q_7, q_8, q_9])
+    def __init__(self, species=4,tasks=3,traits=9,demo=1000, agents_per_species=None) -> None:
+        self.num_species = species
+        self.num_tasks = tasks
+        self.num_traits = traits
+        self.demo_needed = demo
+        self.num_demo = demo+(demo//2)
+        self.Q = []
+        self.X = []
+        self.Y = []
+        self.D = {}
+        self.n_agents_target = np.ones(self.num_species)*10 if agents_per_species is None else agents_per_species
+        self.optimal_Y = np.array([[ 122.53839519, 0., 119.39044525, 32.15983648, 360.87624558, 2920.25543052, 768.93055775, 0., 0.],
+                                   [ 120.64147124, 1433.4094241 ,  0.,   0., 358.13547136, 2906.93229221,  766.11629311,   0., 190.],
+                                   [ 122.31492305, 1441.74082593,  119.06910271,   0., 358.78852644, 0. ,  769.11520065,   0., 193.]])
 
-#     a = rnd.randint(0,5)
-#     b = rnd.randint(5,10)
-#     c = rnd.randint(10,15)
-#     d = rnd.randint(15,20)
-#     indx = np.array([a,b,c,d])
-#     Q = Q_master[:, indx].T
-#     return Q    
+        self.create_demonstration()
+
+    def get_random_q(self,num_species=4):
+        agent_size = int(num_species/4)
+        rng = rnd.default_rng()
+        q_1 = np.concatenate([rng.normal(10,1, size=agent_size),rng.normal(5, 1, size=agent_size),rng.normal(7, 1, size=agent_size),rng.normal(15, 2, size=agent_size)])#speed
+        q_2 = np.concatenate([rng.normal(90,5, size=agent_size),rng.normal(150, 9, size=agent_size),rng.normal(120, 10, size=agent_size),rng.normal(75, 12, size=agent_size)]) #footprint
+        q_3 = np.concatenate([rng.normal(8,2, size=agent_size),rng.normal(5, 1, size=agent_size),rng.normal(16, 1, size=agent_size),rng.normal(7, 2, size=agent_size)]) #payload
+        q_4 = np.concatenate([rng.normal(2,1, size=agent_size),rng.normal(3, 1, size=agent_size),rng.normal(2, 1, size=agent_size),rng.normal(3, 2, size=agent_size)]) #reach
+        q_5 = rng.normal(np.random.randint(25,30), 1, size=num_species) #weight
+        q_6 = rng.normal(np.random.randint(210,230), 15.4, size=num_species) #sensing frequency
+        q_7 = rng.normal(np.random.randint(58,60), 0.8, size=num_species) #sensing range
+        q_8 = rnd.choice([0,1,2,3,4], num_species) #color
+        q_9 = rnd.choice(range(10,20), num_species) #battery
+        Q = np.array([q_1, q_2, q_3, q_4, q_5, q_6, q_7, q_8, q_9]).T
+        return Q
+
+    def create_Q(self):
+        cur_Q = []
+        for i in range(self.num_demo):
+            cur_Q.append(self.get_random_q())
+        self.Q = np.array(cur_Q)
 
 
-def create_trait_histogram(plt):
-    figure, axs = plt.subplots(3,3)
-    figure.suptitle("Historgrams of the traits",  fontsize=48)
-    for i, ax in enumerate(axs.flat):
-        ax.hist(Q[:,:,i], bins=100, density=False,histtype='barstacked', alpha=0.8)
 
+    def create_trait_histogram(plt,Q):
+        figure, axs = plt.subplots(3,3)
+        figure.suptitle("Historgrams of the traits",  fontsize=48)
+        for i, ax in enumerate(axs.flat):
+            ax.hist(Q[:,:,i], bins=100, density=False,histtype='barstacked', alpha=0.8)
+
+    def create_X(self):
+        cur_X = []
+        for i in range(self.num_demo):
+            X_sol = cp.Variable((self.num_tasks, self.num_species), integer=True)
+
+                # minimize trait mismatch
+            mismatch_mat = self.optimal_Y - cp.matmul(X_sol, self.Q[i])  # trait mismatch matrix
+
+            obj = cp.Minimize(cp.pnorm(mismatch_mat, 2))
+
+            # ensure each agent is only assigned to one task
+            constraints = [cp.matmul(X_sol.T, np.ones([self.num_tasks, 1])) <= np.array([self.n_agents_target]).T, X_sol >= 0]
+
+            # solve for X_target
+            opt_prob = cp.Problem(obj, constraints)
+            opt_prob.solve(solver=cp.CPLEX)
+            X_target = X_sol.value
+            cur_X.append(X_target)
+        self.X = np.array(cur_X)
+
+
+    def create_Y(self):
+        self.Y = self.X@self.Q
+
+    def refine_demo_elem_distance(self):
+        loss = []
+        for i in range(self.num_demo):
+            l = np.sum((self.optimal_Y[self.optimal_Y>0] - self.Y[i][self.optimal_Y>0])**2 / (self.optimal_Y[self.optimal_Y>0])**2)
+            loss.append(l)
+
+        ind = np.argpartition(loss, -self.demo_needed)[-self.demo_needed:]
+
+
+        self.Q = np.delete(self.Q,ind,axis=0)
+        self.X = np.delete(self.X,ind,axis=0)
+        self.create_Y()
+
+
+    def refine_demo_l2_norm(self):
+        norms = []
+        for i in range(self.num_demo):
+            norms.append(LA.norm(self.optimal_Y-self.Y[i], 2)) 
+
+        norms = np.array(norms)/LA.norm(self.optimal_Y,2)
+
+        ind = np.argpartition(norms, -self.demo_needed)[-self.demo_needed:]
+
+        self.Q = np.delete(self.Q,ind,axis=0)
+        self.X = np.delete(self.X,ind,axis=0)
+        self.create_Y()
+
+
+    def create_demonstration(self):
+        self.create_Q()
+        self.create_X()
+        self.create_Y()
+        self.refine_demo_l2_norm()
+        self.D = {'X': self.X, 'Q':self.Q, 'Y': self.Y}
+        
+    def get_expert_demonstrations(self):
+        return self.D
+
+    def get_expert_given_traits(self):
+        return self.Q
+    
+    def get_expert_allocation(self):
+        return self.X
+    
+    def get_agent_limit(self):
+        return self.n_agents_target
+
+    def get_optimal_Y(self):
+        return self.optimal_Y
+
+# exp = Experiment()
+# print(exp.get_expert_demonstrations().keys())
