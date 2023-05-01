@@ -1,6 +1,6 @@
 # Inferring Implicit Trait Preferences for Task Allocation in Heterogeneous Teams
 
-### Link to Paper: [https://arxiv.org/abs/2302.10817]{https://arxiv.org/abs/2302.10817}
+### Link to Paper: https://arxiv.org/abs/2302.10817
 ### Advisor: Harish Ravichandar						 
 
 In this research, we address the multi-robot task allocation (MRTA) problems. Within MRTA problems will focus on the coalition formation problem (ST-MR-IA) in which a team of robots needs to be distributed into coalitions (teams) such that multiple concurrent tasks can be successfully carried out [1]. We will be particularly focusing on the coalition formation for heterogeneous teams, where species of robots have different abilities. 
